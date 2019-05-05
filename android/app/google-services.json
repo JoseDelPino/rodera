@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "724943929663",
+    "firebase_url": "https://rodera.firebaseio.com",
+    "project_id": "rodera",
+    "storage_bucket": "rodera.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:724943929663:android:f706cd370caec6cb",
+        "android_client_info": {
+          "package_name": "com.josedelpg.rodera"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "724943929663-mr3e83bn3mci6uktil3nbugb3maqeh1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7K-ltl47CvsbpQWoXW-tXTG1mvxKt2wc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
