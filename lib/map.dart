@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:geoflutterfire/geoflutterfire.dart';
-//import 'package:flutter_map/flutter_map.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
@@ -25,6 +24,7 @@ class MapSampleState extends State<MapSample> {
   Widget build(BuildContext context) {
     return new Scaffold(
       body: GoogleMap(
+
         mapType: MapType.normal,
         myLocationEnabled: true,
         markers: markers,
@@ -38,51 +38,56 @@ class MapSampleState extends State<MapSample> {
       ),
     );
   }
-  Future _onMapCreated(GoogleMapController controller) async {
+
+  void _onMapCreated(GoogleMapController controller) async {
     var position = await location.getLocation();
 
     GeoFirePoint center = geo.point(
-        latitude: position.latitude, longitude: position.longitude);
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
 
     Stream<List<DocumentSnapshot>> stream = geo
         .collection(
-      collectionRef: Firestore.instance.collection('locations'),
-    )
+          collectionRef: Firestore.instance.collection('locations'),
+        )
         .within(center: center, radius: 30, field: 'position');
 
     stream.listen((List<DocumentSnapshot> documentList) {
-
       documentList.forEach((DocumentSnapshot document) async {
-
         GeoPoint point = document.data['position']['geopoint'];
 
-        print("Marcador: "+ point.longitude.toString());
+        Firestore.instance
+            .collection('Madrid')
+            .document(document.documentID)
+            .get()
+            .then((incidence) {
 
-        //DocumentSnapshot incidence = await Firestore.instance.collection('Madrid').document(document.data['document']).get();
-
-        Firestore.instance.collection('Madrid').document(document.data['document']).get().then((incidence) {
-
-          print("Se ha querieado el docuemento: "+ document.data['document']);
-          print("como resultado se ha obtenido la incidencia: "+ incidence.data.toString());
+          print("Se ha querieado el docuemento: " +
+              document.documentID.toString());
+          print("como resultado se ha obtenido la incidencia: " +
+              incidence.data.toString());
           Marker marker = Marker(
-              markerId: MarkerId(point.latitude.toString()+point.longitude.toString()),
+              markerId: MarkerId(
+                  point.latitude.toString() + point.longitude.toString()),
               position: LatLng(point.latitude, point.longitude),
-              infoWindow: InfoWindow(title: incidence.data['title'],
-                  snippet: incidence.data['description'])
-          );
-          markers.add(marker);
+              infoWindow: InfoWindow(
+                  title: incidence.data['title'],
+                  snippet: incidence.data['description']));
+
+
+          setState(() {
+            markers.add(marker);
+          });
         });
-
-
-      }
-      );
+      });
     });
 
     setState(() {
       mapController = controller;
     });
 
-    controller.moveCamera(CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)));
+    controller.moveCamera(
+        CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)));
   }
-
 }

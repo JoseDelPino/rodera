@@ -39,6 +39,8 @@ class _AddIncidenceState extends State<AddIncidence> {
 
   @override
   Widget build(BuildContext context) {
+    Set<dynamic> category = null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Add Incidence", style: TextStyle(color: Colors.black)),
@@ -50,32 +52,84 @@ class _AddIncidenceState extends State<AddIncidence> {
       body: Center(
           child: Form(
               child: new ListView(children: <Widget>[
-        TextFormField(
-          keyboardType: TextInputType.text, // Use email input type for emails.
-          controller: titleController,
-          decoration:
-              new InputDecoration(hintText: 'Bache', labelText: 'Title'),
-          validator: (value) {
-            if (value.isEmpty) {
-              return 'Please enter some text';
-            }
-          },
-        ),
-        TextFormField(
+        Container(
+          margin: const EdgeInsets.only(
+              right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
+          child: TextFormField(
             keyboardType:
-                TextInputType.multiline, // Use email input type for emails.
-            controller: descriptionController,
-            decoration: new InputDecoration(
-                hintText: 'Bache', labelText: 'Description')),
-        Center(
+                TextInputType.text, // Use email input type for emails.
+            controller: titleController,
+            decoration:
+                new InputDecoration(hintText: 'Bache', labelText: 'Title'),
+            validator: (value) {
+              if (value.isEmpty) {
+                return 'Please enter some text';
+              }
+            },
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(
+              right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
+          child: TextFormField(
+              keyboardType:
+                  TextInputType.multiline, // Use email input type for emails.
+              controller: descriptionController,
+              decoration: new InputDecoration(
+                  hintText: 'Bache', labelText: 'Description')),
+        ),
+        Container(
+          margin: const EdgeInsets.only(
+              right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
+          child: DropdownButton<Set<dynamic>>(
+            hint: Text("Choose a category"),
+            items: <Set<dynamic>>[
+              {"Acerado y asfaltado", Icons.directions_car, Colors.red},
+              {"Alcantarillado", Icons.invert_colors, Colors.blue},
+              {"Alumbrado", Icons.lightbulb_outline, Colors.amber},
+              {"Limpieza", Icons.delete, Colors.purple},
+              {"Mobiliario urbano", Icons.event_seat, Colors.deepOrangeAccent},
+              {"Vegetación y sombra", Icons.nature_people, Colors.lightGreen},
+              {"Transporte", Icons.directions_bus, Colors.pink},
+              {"Otros", Icons.category, Colors.black54}
+            ].map((Set<dynamic> value) {
+              return new DropdownMenuItem<Set<dynamic>>(
+                value: value,
+                child: new Row(
+                  children: <Widget>[
+                    Icon(value.elementAt(1), color: value.elementAt(2)),
+                    Text("  " + value.elementAt(0)),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              category = value;
+              print(category.elementAt(0));
+            },
+            value: category,
+            isExpanded: true,
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(
+              right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
           child: _image == null
               ? RaisedButton(
                   onPressed: getImage,
-                  child: const Text('Pick Image'),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      Text('Pick an image'),
+                      Icon(Icons.add_a_photo)
+                    ],
+                  ),
                 )
-              : Image.file(_image, width: 50, height: 50),
+              : Image.file(_image, width: 150, height: 150),
         ),
-        Center(
+        Container(
+          margin: const EdgeInsets.only(
+              right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
           child: _image == null
               ? RaisedButton(
                   onPressed: null,
@@ -90,17 +144,19 @@ class _AddIncidenceState extends State<AddIncidence> {
                         longitude: currentLocation.longitude);
                     DocumentReference docReference =
                         Firestore.instance.collection('Madrid').document();
-                    Firestore.instance.collection('locations').document(docReference.documentID.toString()).setData({
-                      'position': myLocation.data
-                    });
+                    Firestore.instance
+                        .collection('locations')
+                        .document(docReference.documentID.toString())
+                        .setData({'position': myLocation.data});
                     docReference.setData({
                       'title': titleController.text,
                       'description': descriptionController.text,
                       'score': 0,
                       'user': widget.user.uid,
+                      'category': category.elementAt(0),
                       'position': GeoPoint(
                           currentLocation.latitude, currentLocation.longitude),
-                      'comments':[],
+                      'comments': [],
                     });
                     FirebaseStorage.instance
                         .ref()
@@ -118,6 +174,8 @@ class _AddIncidenceState extends State<AddIncidence> {
                       ),
                     );
                   },
+                  color: Colors.black87,
+                  textColor: Colors.white,
                   child: const Text('UPLOAD'),
                 ),
         ),
