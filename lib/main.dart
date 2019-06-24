@@ -19,7 +19,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Rodera',
-      home: SignIn(),
+      //home: SignIn(),
+      home: MySplashScreen(),
     );
   }
 }

@@ -27,20 +27,48 @@ class _AddIncidenceState extends State<AddIncidence> {
   Geoflutterfire geo = Geoflutterfire();
 
   File _image;
+  String dropdownValue = null;
 
   Future getImage() async {
     print("Entered image picker");
-    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+    var image = await ImagePicker.pickImage(source: ImageSource.gallery,maxHeight: 600, maxWidth: 600);
     print("Image chosen");
     setState(() {
       _image = image;
     });
   }
 
+  Icon getIcon(String value) {
+    switch (value) {
+      case "Acerado y asfaltado":
+        return Icon(Icons.directions_car, color: Colors.red);
+        break;
+      case "Alcantarillado":
+        return Icon(Icons.invert_colors, color: Colors.blue);
+        break;
+      case "Alumbrado":
+        return Icon(Icons.lightbulb_outline, color: Colors.amber);
+        break;
+      case "Limpieza":
+        return Icon(Icons.delete, color: Colors.purple);
+        break;
+      case "Mobiliario urbano":
+        return Icon(Icons.event_seat, color: Colors.deepOrangeAccent);
+        break;
+      case "Vegetación y sombra":
+        return Icon(Icons.nature_people, color: Colors.lightGreen);
+        break;
+      case "Transporte":
+        return Icon(Icons.directions_bus, color: Colors.pink);
+        break;
+      case "Otros":
+        return Icon(Icons.category, color: Colors.black54);
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    Set<dynamic> category = null;
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Add Incidence", style: TextStyle(color: Colors.black)),
@@ -59,8 +87,8 @@ class _AddIncidenceState extends State<AddIncidence> {
             keyboardType:
                 TextInputType.text, // Use email input type for emails.
             controller: titleController,
-            decoration:
-                new InputDecoration(hintText: 'Bache', labelText: 'Title'),
+            decoration: new InputDecoration(
+                hintText: 'Write the title here...', labelText: 'Title'),
             validator: (value) {
               if (value.isEmpty) {
                 return 'Please enter some text';
@@ -76,39 +104,34 @@ class _AddIncidenceState extends State<AddIncidence> {
                   TextInputType.multiline, // Use email input type for emails.
               controller: descriptionController,
               decoration: new InputDecoration(
-                  hintText: 'Bache', labelText: 'Description')),
+                  hintText: 'Write the description here...',
+                  labelText: 'Description')),
         ),
         Container(
           margin: const EdgeInsets.only(
               right: 50.0, left: 50.0, top: 15.0, bottom: 15.0),
-          child: DropdownButton<Set<dynamic>>(
+          child: DropdownButton<String>(
             hint: Text("Choose a category"),
-            items: <Set<dynamic>>[
-              {"Acerado y asfaltado", Icons.directions_car, Colors.red},
-              {"Alcantarillado", Icons.invert_colors, Colors.blue},
-              {"Alumbrado", Icons.lightbulb_outline, Colors.amber},
-              {"Limpieza", Icons.delete, Colors.purple},
-              {"Mobiliario urbano", Icons.event_seat, Colors.deepOrangeAccent},
-              {"Vegetación y sombra", Icons.nature_people, Colors.lightGreen},
-              {"Transporte", Icons.directions_bus, Colors.pink},
-              {"Otros", Icons.category, Colors.black54}
-            ].map((Set<dynamic> value) {
-              return new DropdownMenuItem<Set<dynamic>>(
+            value: dropdownValue,
+            onChanged: (String newValue) {
+              setState(() {
+                dropdownValue = newValue;
+              });
+            },
+            items: <String>["Acerado y asfaltado", "Alcantarillado", "Alumbrado", "Limpieza", "Mobiliario urbano", "Vegetación y sombra", "Transporte", "Otros"]
+                .map<DropdownMenuItem<String>>((String value) {
+
+              return DropdownMenuItem<String>(
                 value: value,
                 child: new Row(
                   children: <Widget>[
-                    Icon(value.elementAt(1), color: value.elementAt(2)),
-                    Text("  " + value.elementAt(0)),
+                    getIcon(value),
+                    Text("  " + value),
                   ],
                 ),
               );
-            }).toList(),
-            onChanged: (value) {
-              category = value;
-              print(category.elementAt(0));
-            },
-            value: category,
-            isExpanded: true,
+            })
+                .toList(),
           ),
         ),
         Container(
@@ -143,7 +166,7 @@ class _AddIncidenceState extends State<AddIncidence> {
                         latitude: currentLocation.latitude,
                         longitude: currentLocation.longitude);
                     DocumentReference docReference =
-                        Firestore.instance.collection('Madrid').document();
+                        Firestore.instance.collection('incidences').document();
                     Firestore.instance
                         .collection('locations')
                         .document(docReference.documentID.toString())
@@ -153,7 +176,7 @@ class _AddIncidenceState extends State<AddIncidence> {
                       'description': descriptionController.text,
                       'score': 0,
                       'user': widget.user.uid,
-                      'category': category.elementAt(0),
+                      'category': dropdownValue,
                       'position': GeoPoint(
                           currentLocation.latitude, currentLocation.longitude),
                       'comments': [],
@@ -162,17 +185,7 @@ class _AddIncidenceState extends State<AddIncidence> {
                         .ref()
                         .child(docReference.documentID.toString())
                         .putFile(_image);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ViewIncidence(
-                              title: titleController.text,
-                              description: descriptionController.text,
-                              score: 0,
-                              reference: docReference.documentID,
-                            ),
-                      ),
-                    );
+                    Navigator.pop(context);
                   },
                   color: Colors.black87,
                   textColor: Colors.white,

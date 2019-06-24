@@ -60,7 +60,7 @@ class _SignInState extends State<SignIn> {
                   ),
                   RaisedButton(
                     onPressed: () {
-                      signIn();
+                      signIn(context);
                     },
                     child: Text('SIGN IN'),
                     color: Colors.black,
@@ -86,12 +86,18 @@ class _SignInState extends State<SignIn> {
         ));
   }
 
-  void signIn() async {
+  void signIn(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
+      FocusScope.of(context).requestFocus(new FocusNode());
       try {
         FirebaseUser user = await FirebaseAuth.instance.signInWithEmailAndPassword(email: _email, password: _password);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => MyHome(title: 'Rodera', myFirebaseUser: user)));
+        if(user.isEmailVerified){
+          Navigator.push(context, MaterialPageRoute(builder: (context) => MyHome(title: 'Rodera', myFirebaseUser: user)));
+        }else{
+          final snackBar = SnackBar(content: Text('Please verify your email first.'));
+          Scaffold.of(context).showSnackBar(snackBar);
+        }
       } catch (e) {
         final snackBar = SnackBar(content: Text('Either the user or the password are not correct.'));
         Scaffold.of(context).showSnackBar(snackBar);

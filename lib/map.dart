@@ -58,7 +58,7 @@ class MapSampleState extends State<MapSample> {
         GeoPoint point = document.data['position']['geopoint'];
 
         Firestore.instance
-            .collection('Madrid')
+            .collection('incidences')
             .document(document.documentID)
             .get()
             .then((incidence) {

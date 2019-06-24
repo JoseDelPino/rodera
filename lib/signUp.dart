@@ -84,9 +84,19 @@ class _SignUpState extends State<SignUp> {
   void signUp() async {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
+      FocusScope.of(context).requestFocus(new FocusNode());
       try {
-        await FirebaseAuth.instance
+        FirebaseUser myFirebaseUser = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: _email, password: _password);
+        myFirebaseUser.sendEmailVerification();
+        DocumentReference docReference =
+        Firestore.instance.collection('users').document(myFirebaseUser.uid.toString());
+        docReference.setData({
+          'name': "",
+          'email': _email,
+          'followers': [],
+          'following': []
+        });
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => SignIn()));
       } catch (e) {

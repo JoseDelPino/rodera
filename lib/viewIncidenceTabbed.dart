@@ -13,7 +13,7 @@ class ViewIncidence extends StatefulWidget {
   ViewIncidence({Key key, this.documentSnapshot, this.myFirebaseUser})
       : super(key: key);
 
-  final DocumentSnapshot documentSnapshot;
+  final Map<String, dynamic> documentSnapshot;
   final FirebaseUser myFirebaseUser;
 
   @override
@@ -22,46 +22,106 @@ class ViewIncidence extends StatefulWidget {
 
 class _ViewIncidence extends State<ViewIncidence> {
   Future<String> _getImage() async {
-    print(widget.documentSnapshot.documentID);
+    print(widget.documentSnapshot["postID"]);
     return await FirebaseStorage.instance
         .ref()
-        .child(widget.documentSnapshot.documentID.toString())
+        .child(widget.documentSnapshot["postID"].toString())
         .getDownloadURL();
   }
 
   Widget Info(String uri) {
+    IconData categoryIcon;
+    Color categoryColor;
+
+    switch (widget.documentSnapshot["category"]) {
+      case "Acerado y asfaltado":
+        categoryIcon = Icons.directions_car;
+        categoryColor = Colors.red;
+        break;
+      case "Alcantarillado":
+        categoryIcon = Icons.invert_colors;
+        categoryColor = Colors.blue;
+        break;
+      case "Alumbrado":
+        categoryIcon = Icons.lightbulb_outline;
+        categoryColor = Colors.amber;
+        break;
+      case "Limpieza":
+        categoryIcon = Icons.delete;
+        categoryColor = Colors.purple;
+        break;
+      case "Mobiliario urbano":
+        categoryIcon = Icons.event_seat;
+        categoryColor = Colors.deepOrangeAccent;
+        break;
+      case "Vegetación y sombra":
+        categoryIcon = Icons.nature_people;
+        categoryColor = Colors.lightGreen;
+        break;
+      case "Transporte":
+        categoryIcon = Icons.directions_bus;
+        categoryColor = Colors.pink;
+        break;
+      case "Otros":
+        categoryIcon = Icons.category;
+        categoryColor = Colors.black54;
+        break;
+    }
     return Container(
       child: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             SizedBox(height: 20.0),
             new Container(
               child: uri != null
                   ? Container(
                       height: MediaQuery.of(context).size.height / 2,
-                      width: MediaQuery.of(context).size.width / 2,
+                      width: MediaQuery.of(context).size.width / 1.2,
                       decoration: new BoxDecoration(
                         borderRadius: BorderRadius.circular(5.0),
                         image: new DecorationImage(
-                            fit: BoxFit.fill,
+                            fit: BoxFit.scaleDown,
                             image: new NetworkImage(
-                                "https://firebasestorage.googleapis.com/v0/b/rodera.appspot.com/o/-Le7kMcU5V8KGbQZxBls?alt=media&token=2ba02ba9-a162-43b8-8b13-04b2c13de46f")),
+                                "https://firebasestorage.googleapis.com/v0/b/rodera.appspot.com/o/"+widget.documentSnapshot["postID"]+"?alt=media&token=2ba02ba9-a162-43b8-8b13-04b2c13de46f")),
                       ),
                     )
                   : new Container(),
             ),
             SizedBox(height: 20.0),
+            Transform(
+              transform: new Matrix4.identity()..scale(0.9),
+              child: Chip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      categoryIcon,
+                      color: Colors.white,
+                    ),
+                    Text(
+                      "  " + widget.documentSnapshot["category"],
+                    ),
+                  ],
+                ),
+                labelStyle: TextStyle(color: Colors.white),
+                backgroundColor: categoryColor,
+                padding: EdgeInsets.all(5.0),
+              ),
+            ),
             Card(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   ListTile(
-                    title: Text(widget.documentSnapshot.data["description"]),
+                    title: Text(widget.documentSnapshot["description"]),
                     //Comment for git
                   ),
+
                 ],
               ),
-            )
+            ),
+
           ],
         ),
       ),
@@ -69,7 +129,8 @@ class _ViewIncidence extends State<ViewIncidence> {
   }
 
   Widget Map() {
-    GeoPoint position = widget.documentSnapshot.data["position"];
+
+    GeoPoint position = new GeoPoint(widget.documentSnapshot["position"]["_latitude"], widget.documentSnapshot["position"]["_longitude"]) ;
     return GoogleMap(
       mapType: MapType.normal,
       myLocationEnabled: true,
@@ -111,13 +172,13 @@ class _ViewIncidence extends State<ViewIncidence> {
               "textComment": textController.text,
             };
             Firestore.instance
-                .collection('Madrid')
-                .document(widget.documentSnapshot.documentID.toString())
+                .collection('incidences')
+                .document(widget.documentSnapshot["postID"].toString())
                 .updateData({
               "comments": FieldValue.arrayUnion([comment])
             });
             textController.clear();
-            widget.documentSnapshot.data["comments"].add(comment);
+            widget.documentSnapshot["comments"].add(comment);
           },
           child: const Icon(Icons.send),
           color: Colors.black,
@@ -126,15 +187,15 @@ class _ViewIncidence extends State<ViewIncidence> {
         SizedBox(height: 20.0),
         Expanded(
             child: ListView.builder(
-          itemCount: widget.documentSnapshot.data["comments"].length,
+          itemCount: widget.documentSnapshot["comments"].length,
           itemBuilder: (BuildContext ctxt, int index) {
 
             return new ListTile(
               leading: new CircleAvatar(
-                child: Text(widget.documentSnapshot.data["comments"][index]["userName"][0]),
+                child: Text(widget.documentSnapshot["comments"][index]["userName"][0]),
 
               ),
-              title: new Text(widget.documentSnapshot.data["comments"][index]["textComment"]),
+              title: new Text(widget.documentSnapshot["comments"][index]["textComment"]),
             );
           },
         ))
@@ -142,10 +203,30 @@ class _ViewIncidence extends State<ViewIncidence> {
     );
   }
 
+  Widget _actionButton() {
+    print(widget.documentSnapshot["user"].toString());
+    print(widget.myFirebaseUser.uid.toString());
+    return widget.documentSnapshot["user"].toString() == widget.myFirebaseUser.uid.toString() ? FloatingActionButton(
+        shape: StadiumBorder(),
+        onPressed: (){
+          Firestore.instance.collection('incidences').document( widget.documentSnapshot["postID"].toString()).delete();
+          FirebaseStorage.instance
+              .ref()
+              .child(widget.documentSnapshot["postID"].toString()).delete();
+          Navigator.pop(context);
+        },
+        backgroundColor: Colors.red,
+        child: Icon(
+          Icons.clear,
+          size: 20.0,
+        )) : null;
+  }
+
   Widget _buildAll(String uri) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        floatingActionButton: _actionButton(),
         appBar: AppBar(
           bottom: TabBar(
             tabs: [
@@ -155,7 +236,7 @@ class _ViewIncidence extends State<ViewIncidence> {
             ],
             labelColor: Colors.black,
           ),
-          title: Text(widget.documentSnapshot.data["title"], style: TextStyle(color: Colors.black)),
+          title: Text(widget.documentSnapshot["title"], style: TextStyle(color: Colors.black)),
           backgroundColor: Colors.white,
           iconTheme: IconThemeData(
             color: Colors.black,

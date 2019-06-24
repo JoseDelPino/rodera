@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rodera/main.dart';
 
 class viewMyProfile extends StatefulWidget {
-  viewMyProfile({Key key, this.myFirebaseUser,}) : super(key: key);
+  viewMyProfile({Key key, this.myFirebaseUser}) : super(key: key);
 
   final FirebaseUser myFirebaseUser;
 
@@ -18,25 +18,39 @@ class viewMyProfile extends StatefulWidget {
 }
 
 class _viewMyProfileState extends State<viewMyProfile> {
-
-  Profile profile;
+  File imageFile;
+  bool editing;
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  Future<String> _getImageURI() async {
-    String uri = await FirebaseStorage.instance
-        .ref()
-        .child("profile_images/" + widget.myFirebaseUser.uid.toString())
-        .getDownloadURL();
-    return uri;
+  Future<String> imageURI;
+
+  @override
+  void initState() {
+    imageURI = _getImageURI(); // only create the future once.
+    super.initState();
   }
-  
+
+  Future<String> _getImageURI() async {
+    try {
+      String uri = await FirebaseStorage.instance
+          .ref()
+          .child("profile_images/" + widget.myFirebaseUser.uid.toString())
+          .getDownloadURL();
+      print(uri);
+      return uri;
+    } catch (e) {
+      print("BOAB");
+      return "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: _getImageURI(),
+      future: imageURI,
       builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -44,9 +58,10 @@ class _viewMyProfileState extends State<viewMyProfile> {
           case ConnectionState.waiting:
             return Center(child: RefreshProgressIndicator());
           case ConnectionState.done:
-            if (snapshot.hasError) return Text('Error: ${snapshot.error}');
-            if(profile!=null){
-              return _buildProfileEdit(context);
+            if (editing != null) {
+              if(editing == true){
+                return _buildProfileEdit(context, snapshot.data);
+              }
             }
             return _buildProfileView(snapshot.data);
         }
@@ -57,27 +72,29 @@ class _viewMyProfileState extends State<viewMyProfile> {
 
   Widget _buildProfileView(String uri) {
     return Scaffold(
-
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           new Container(
-              child: new CircleAvatar(
-                  backgroundImage: new NetworkImage(uri), radius: 60.0)),
+            child: new CircleAvatar(
+              backgroundImage: new NetworkImage(uri),
+              radius: 60.0,
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 50.0, left: 50.0, top: 15.0),
             child: ListTile(
               title: Text("Nombre:"),
-              subtitle: Text(widget.myFirebaseUser.email == null
+              subtitle: Text(widget.myFirebaseUser.displayName == null
                   ? "No se ha elegido un nombre."
-                  : widget.myFirebaseUser.email.toString()),
+                  : widget.myFirebaseUser.displayName.toString()),
             ),
           ),
           Container(
             margin:
-            const EdgeInsets.only(right: 50.0, left: 50.0, bottom: 15.0),
+                const EdgeInsets.only(right: 50.0, left: 50.0, bottom: 15.0),
             child: ListTile(
               title: Text("Email:"),
               subtitle: Text(widget.myFirebaseUser.email == null
@@ -86,70 +103,65 @@ class _viewMyProfileState extends State<viewMyProfile> {
             ),
           ),
           Container(
-            child: widget.myFirebaseUser.uid == widget.myFirebaseUser.uid ? RaisedButton(
-              onPressed: () => setState(() {
-                Image image = new Image(image: NetworkImage(uri));
-                profile = new Profile(
-                    widget.myFirebaseUser.displayName != null
-                        ? widget.myFirebaseUser.displayName
-                        : "",
-                    widget.myFirebaseUser.email != null ? widget.myFirebaseUser.email : "",
-                    image);
+              child: RaisedButton(
+            onPressed: () => setState(() {
+                  Image image = new Image(image: NetworkImage(uri));
+                  editing = true;
 
-              }),
-              child: Text('EDIT'),
-              color: Colors.black,
-              textColor: Colors.white,
-
-            ) : RaisedButton(
-              onPressed: () => setState(() {
-                Image image = new Image(image: NetworkImage(uri));
-                profile = new Profile(
-                    widget.myFirebaseUser.displayName != null
-                        ? widget.myFirebaseUser.displayName
-                        : "",
-                    widget.myFirebaseUser.email != null ? widget.myFirebaseUser.email : "",
-                    image);
-
-              }),
-              child: Text('EDIT'),
-              color: Colors.black,
-              textColor: Colors.white,
-
-            ), //or any other widget but not null
-          ),
+                }),
+            child: Text('EDIT'),
+            color: Colors.black,
+            textColor: Colors.white,
+          ) //or any other widget but not null
+              ),
         ],
       ),
     );
   }
 
   Future _pickImage() async {
-    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+    var image = await ImagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
 
     setState(() {
-      profile.image = image as Image;
+      imageFile = image;
     });
   }
 
   final _formKey = GlobalKey<FormState>();
-  Widget _buildProfileEdit(BuildContext context) {
+  Widget _buildProfileEdit(BuildContext context, String uri) {
     return Form(
       key: _formKey,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Center(
-            child: profile.image == null
-                ? IconButton(
-                icon: new Icon(Icons.account_circle),
-                color: Colors.blueAccent,
-                iconSize: 120.0,
-                onPressed: _pickImage)
-                : new CircleAvatar(
-              child: profile.image,
-              radius: 60.0,
-            ),
+            child: imageFile == null
+                ? GestureDetector(
+          onTap: () {
+    _pickImage();
+    },
+      child: new Container(
+        child: new CircleAvatar(
+          backgroundImage: new NetworkImage(uri),
+          radius: 60.0,
+        ),
+      ),
+    )
+                : GestureDetector(
+                    onTap: () {
+                      _pickImage();
+                    },
+                    child: new Container(
+                      child: new CircleAvatar(
+                        backgroundImage: Image.file(imageFile).image,
+                        radius: 60.0,
+                      ),
+                    ),
+                  ),
           ),
           Container(
             margin: const EdgeInsets.only(right: 50.0, left: 50.0, top: 10.0),
@@ -157,7 +169,7 @@ class _viewMyProfileState extends State<viewMyProfile> {
               controller: nameController,
               keyboardType: TextInputType.text,
               decoration: new InputDecoration(
-                  hintText: profile.name, labelText: 'Name'),
+                  hintText: widget.myFirebaseUser.displayName, labelText: 'Name'),
             ),
           ),
           Container(
@@ -177,12 +189,12 @@ class _viewMyProfileState extends State<viewMyProfile> {
                 }
               },
               decoration: new InputDecoration(
-                  hintText: profile.email, labelText: 'Email'),
+                  hintText: widget.myFirebaseUser.email, labelText: 'Email'),
             ),
           ),
           Container(
             margin:
-            const EdgeInsets.only(right: 50.0, left: 50.0, bottom: 20.0),
+                const EdgeInsets.only(right: 50.0, left: 50.0, bottom: 20.0),
             child: TextFormField(
               controller: passwordController,
               keyboardType: TextInputType.text,
@@ -201,34 +213,49 @@ class _viewMyProfileState extends State<viewMyProfile> {
           ),
           RaisedButton(
             onPressed: () {
+              print("Se entra en el update");
               if (_formKey.currentState.validate()) {
                 try {
                   if (nameController.text != null &&
                       nameController.text.isNotEmpty) {
                     UserUpdateInfo userUpdateInfo = new UserUpdateInfo();
-                    userUpdateInfo.displayName = nameController.text; 
+                    userUpdateInfo.displayName = nameController.text;
                     widget.myFirebaseUser.updateProfile(userUpdateInfo);
+                    Firestore.instance
+                        .collection('users')
+                        .document(widget.myFirebaseUser.uid)
+                        .updateData({"name": nameController.text});
                   }
                   if (emailController.text != null &&
                       emailController.text.isNotEmpty) {
                     widget.myFirebaseUser.updateEmail(emailController.text);
+                    Firestore.instance
+                        .collection('users')
+                        .document(widget.myFirebaseUser.uid)
+                        .updateData({"email": emailController.text});
                   }
                   if (passwordController.text != null &&
                       passwordController.text.isNotEmpty) {
-                    widget.myFirebaseUser.updatePassword(passwordController.text);
+                    widget.myFirebaseUser
+                        .updatePassword(passwordController.text);
                   }
-                  if (profile.image != null) {
+                  if (imageFile != null) {
                     FirebaseStorage.instance
                         .ref()
                         .child("profile_images/" + widget.myFirebaseUser.uid.toString())
-                        .putFile(profile.image as File);
+                        .putFile(imageFile);
                     UserUpdateInfo userUpdateInfo = new UserUpdateInfo();
                     userUpdateInfo.photoUrl =
                         "profile_images/" + widget.myFirebaseUser.uid.toString();
                     widget.myFirebaseUser.updateProfile(userUpdateInfo);
                   }
+
+                  setState(() {
+                    editing = false;
+                    imageFile = null;
+                  });
                 } catch (e) {
-                  print(e.message);
+                  print(e.toString());
                 }
               }
             },
@@ -240,10 +267,10 @@ class _viewMyProfileState extends State<viewMyProfile> {
             padding: EdgeInsets.all(20.0),
             child: RaisedButton(
               onPressed: () => {
-              setState(() {
-                profile = null;
-              })
-              },
+                    setState(() {
+                      editing = false;
+                    })
+                  },
               textColor: Colors.white,
               color: Colors.redAccent,
               child: Text('CANCEL'),
