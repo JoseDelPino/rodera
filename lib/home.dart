@@ -24,7 +24,7 @@ class _MyHomeState extends State<MyHome> {
   @override
   Widget build(BuildContext context) {
 
-    List<Widget> _widgetOptions = [Feed(myFirebaseUser: widget.myFirebaseUser,),Search(myFirebaseUser: widget.myFirebaseUser),MapSample(),viewMyProfile(myFirebaseUser: widget.myFirebaseUser,)];
+    List<Widget> _widgetOptions = [Feed(myFirebaseUser: widget.myFirebaseUser,),Search(myFirebaseUser: widget.myFirebaseUser),MapSample(myFirebaseUser: widget.myFirebaseUser,),viewMyProfile(myFirebaseUser: widget.myFirebaseUser,)];
 
     return Scaffold(
       appBar: AppBar(

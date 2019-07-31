@@ -114,6 +114,7 @@ class _viewMyProfileState extends State<viewMyProfile> {
             textColor: Colors.white,
           ) //or any other widget but not null
               ),
+
         ],
       ),
     );

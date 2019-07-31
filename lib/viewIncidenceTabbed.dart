@@ -8,19 +8,29 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rodera/main.dart';
+import 'package:rodera/viewMyProfile.dart';
+import 'package:rodera/viewOtherProfile.dart';
 
 class ViewIncidence extends StatefulWidget {
   ViewIncidence({Key key, this.documentSnapshot, this.myFirebaseUser})
-      : super(key: key);
+      : super(key: key){
+    print("El doc: "+documentSnapshot["position"].toString());
+    print("El user: "+myFirebaseUser.toString());
 
-  final Map<String, dynamic> documentSnapshot;
-  final FirebaseUser myFirebaseUser;
+  }
+
+  Map<String, dynamic> documentSnapshot;
+  FirebaseUser myFirebaseUser;
+
+
 
   @override
   _ViewIncidence createState() => _ViewIncidence();
 }
 
 class _ViewIncidence extends State<ViewIncidence> {
+
+
   Future<String> _getImage() async {
     print(widget.documentSnapshot["postID"]);
     return await FirebaseStorage.instance
@@ -67,6 +77,9 @@ class _ViewIncidence extends State<ViewIncidence> {
         categoryColor = Colors.black54;
         break;
     }
+    print ("https://firebasestorage.googleapis.com/v0/b/rodera.appspot.com/o/" +
+        widget.documentSnapshot["postID"] +
+        "?alt=media&token=2ba02ba9-a162-43b8-8b13-04b2c13de46f");
     return Container(
       child: Center(
         child: Column(
@@ -83,7 +96,9 @@ class _ViewIncidence extends State<ViewIncidence> {
                         image: new DecorationImage(
                             fit: BoxFit.scaleDown,
                             image: new NetworkImage(
-                                "https://firebasestorage.googleapis.com/v0/b/rodera.appspot.com/o/"+widget.documentSnapshot["postID"]+"?alt=media&token=2ba02ba9-a162-43b8-8b13-04b2c13de46f")),
+                                "https://firebasestorage.googleapis.com/v0/b/rodera.appspot.com/o/" +
+                                    widget.documentSnapshot["postID"] +
+                                    "?alt=media&token=2ba02ba9-a162-43b8-8b13-04b2c13de46f")),
                       ),
                     )
                   : new Container(),
@@ -117,11 +132,9 @@ class _ViewIncidence extends State<ViewIncidence> {
                     title: Text(widget.documentSnapshot["description"]),
                     //Comment for git
                   ),
-
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -129,9 +142,11 @@ class _ViewIncidence extends State<ViewIncidence> {
   }
 
   Widget Map() {
-
-    GeoPoint position = new GeoPoint(widget.documentSnapshot["position"]["_latitude"], widget.documentSnapshot["position"]["_longitude"]) ;
+    GeoPoint position = new GeoPoint(
+        widget.documentSnapshot["position"]["_latitude"],
+        widget.documentSnapshot["position"]["_longitude"]);
     return GoogleMap(
+
       mapType: MapType.normal,
       myLocationEnabled: true,
       markers: <Marker>{
@@ -139,7 +154,7 @@ class _ViewIncidence extends State<ViewIncidence> {
           markerId: MarkerId(
               position.latitude.toString() + position.longitude.toString()),
           position: LatLng(position.latitude, position.longitude),
-        )
+        ),
       },
       initialCameraPosition: CameraPosition(
         target: LatLng(position.latitude, position.longitude),
@@ -156,14 +171,14 @@ class _ViewIncidence extends State<ViewIncidence> {
         Container(
           margin: const EdgeInsets.only(
               right: 30.0, left: 30.0, top: 15.0, bottom: 15.0),
-
-        child: TextField(
-          controller: textController,
-          decoration: InputDecoration(
-            suffixIcon: Icon(Icons.add_comment),
-            hintText: 'Share your thoughts...',
+          child: TextField(
+            controller: textController,
+            decoration: InputDecoration(
+              suffixIcon: Icon(Icons.add_comment),
+              hintText: 'Share your thoughts...',
+            ),
           ),
-        ),),
+        ),
         RaisedButton(
           onPressed: () {
             var comment = {
@@ -189,13 +204,52 @@ class _ViewIncidence extends State<ViewIncidence> {
             child: ListView.builder(
           itemCount: widget.documentSnapshot["comments"].length,
           itemBuilder: (BuildContext ctxt, int index) {
-
             return new ListTile(
-              leading: new CircleAvatar(
-                child: Text(widget.documentSnapshot["comments"][index]["userName"][0]),
+              leading: new InkWell(
+                child: CircleAvatar(
+                  child: Text(
+                    widget.documentSnapshot["comments"][index]["userName"][0],
+                  ),
+                ),
+                onTap: () {
+                  if (widget.documentSnapshot["user"].toString() ==
+                      widget.myFirebaseUser.uid.toString()) {
 
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => viewMyProfile(
+                                myFirebaseUser: widget.myFirebaseUser,
+                              )),
+                    );
+                  } else {
+                    print(widget.documentSnapshot["comments"][index]["userUID"].toString());
+                    Firestore.instance
+                        .collection('users').document(widget.documentSnapshot["comments"][index]["userUID"].toString()).get().then((documentSnapshot) {
+                          print(documentSnapshot.reference.path);
+                      User otherUser = User(
+                          documentSnapshot.data['name'],
+                          documentSnapshot.data['email'],
+                          documentSnapshot.documentID,
+                          new List<dynamic>.from(documentSnapshot.data['followers']),
+                          new List<dynamic>.from(documentSnapshot.data['following']));
+
+                      User myUser = User.fromFirebaseUser(widget.myFirebaseUser);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => viewOtherProfile(myUser: myUser,otherUser: otherUser,)),
+                      );
+
+                    }
+                    );
+
+
+                  }
+                },
               ),
-              title: new Text(widget.documentSnapshot["comments"][index]["textComment"]),
+              title: new Text(
+                  widget.documentSnapshot["comments"][index]["textComment"]),
             );
           },
         ))
@@ -206,20 +260,27 @@ class _ViewIncidence extends State<ViewIncidence> {
   Widget _actionButton() {
     print(widget.documentSnapshot["user"].toString());
     print(widget.myFirebaseUser.uid.toString());
-    return widget.documentSnapshot["user"].toString() == widget.myFirebaseUser.uid.toString() ? FloatingActionButton(
-        shape: StadiumBorder(),
-        onPressed: (){
-          Firestore.instance.collection('incidences').document( widget.documentSnapshot["postID"].toString()).delete();
-          FirebaseStorage.instance
-              .ref()
-              .child(widget.documentSnapshot["postID"].toString()).delete();
-          Navigator.pop(context);
-        },
-        backgroundColor: Colors.red,
-        child: Icon(
-          Icons.clear,
-          size: 20.0,
-        )) : null;
+    return widget.documentSnapshot["user"].toString() ==
+            widget.myFirebaseUser.uid.toString()
+        ? FloatingActionButton(
+            shape: StadiumBorder(),
+            onPressed: () {
+              Firestore.instance
+                  .collection('incidences')
+                  .document(widget.documentSnapshot["postID"].toString())
+                  .delete();
+              FirebaseStorage.instance
+                  .ref()
+                  .child(widget.documentSnapshot["postID"].toString())
+                  .delete();
+              Navigator.pop(context);
+            },
+            backgroundColor: Colors.red,
+            child: Icon(
+              Icons.clear,
+              size: 20.0,
+            ))
+        : null;
   }
 
   Widget _buildAll(String uri) {
@@ -236,7 +297,8 @@ class _ViewIncidence extends State<ViewIncidence> {
             ],
             labelColor: Colors.black,
           ),
-          title: Text(widget.documentSnapshot["title"], style: TextStyle(color: Colors.black)),
+          title: Text(widget.documentSnapshot["title"],
+              style: TextStyle(color: Colors.black)),
           backgroundColor: Colors.white,
           iconTheme: IconThemeData(
             color: Colors.black,

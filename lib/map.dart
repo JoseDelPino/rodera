@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -9,7 +10,17 @@ import 'package:location/location.dart';
 import 'package:rodera/viewIncidence.dart';
 import 'package:rodera/main.dart';
 
+import 'viewIncidenceTabbed.dart';
+
 class MapSample extends StatefulWidget {
+
+  MapSample({
+    Key key,
+    this.myFirebaseUser,
+  }) : super(key: key);
+
+  final FirebaseUser myFirebaseUser;
+
   @override
   State<MapSample> createState() => MapSampleState();
 }
@@ -68,6 +79,27 @@ class MapSampleState extends State<MapSample> {
           print("como resultado se ha obtenido la incidencia: " +
               incidence.data.toString());
           Marker marker = Marker(
+              onTap: () {
+                print("Entrado por el mapa");
+
+                Firestore.instance.collection('incidences').document(document.documentID.toString()).get().then((DocumentSnapshot doc) {
+                  print(doc.data);
+                  doc.data["postID"] = document.documentID.toString();
+                  GeoPoint pos = doc.data["position"];
+                  doc.data["position"]["_latitude"] = pos.latitude;
+                  doc.data["position"]["_longitude"] = pos.longitude;
+                  //doc.data["position"] = {_latitude: pos.latitude,_longitude: pos.longitude};
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ViewIncidence(
+                          myFirebaseUser: widget.myFirebaseUser,
+                          documentSnapshot: doc.data,
+                        )),
+                  );
+                });
+
+              },
               markerId: MarkerId(
                   point.latitude.toString() + point.longitude.toString()),
               position: LatLng(point.latitude, point.longitude),

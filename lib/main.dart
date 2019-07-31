@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import './home.dart';
@@ -9,10 +10,16 @@ import './signIn.dart';
 import './signUp.dart';
 import './splash_page.dart';
 
-void main() => runApp(Padding(
+void main() {
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then((_) {
+    runApp(Padding(
       padding: const EdgeInsets.all(8.0),
       child: MyApp(),
     ));
+  });
+
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -66,8 +73,7 @@ class User {
   User(this.name, this.email, this.uid, this.followers, this.following);
 
   User.fromFirebaseUser(FirebaseUser firebaseUser)
-      :
-        name = firebaseUser.displayName,
+      : name = firebaseUser.displayName,
         email = firebaseUser.email,
         uid = firebaseUser.uid,
         followers = new List(),
@@ -78,6 +84,8 @@ class Comment {
   String user;
   String comment;
 
-
-  Comment(this.user, this.comment, );
+  Comment(
+    this.user,
+    this.comment,
+  );
 }

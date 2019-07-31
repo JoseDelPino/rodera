@@ -119,6 +119,7 @@ class _FeedState extends State<Feed> {
               {'state': 1});
           setState(() {
             liked = true;
+            post["score"] = post["score"]+1;
           });
         });
       } else {
@@ -132,6 +133,7 @@ class _FeedState extends State<Feed> {
         });
         setState(() {
           liked = false;
+          post["score"] = post["score"]-1;
         });
       }
     }
@@ -146,7 +148,6 @@ class _FeedState extends State<Feed> {
       } else {
         icon = Icons.favorite_border;
       }
-      print("Se ha entrado en el const");
       return IconButton(
         icon: Icon(icon),
         color: color,
@@ -173,7 +174,7 @@ class _FeedState extends State<Feed> {
         future: getFeeling(),
         builder: (BuildContext context, AsyncSnapshot none) {
           return Card(
-              child: new InkWell(
+            child: new InkWell(
                 onTap: () {
                   Navigator.push(
                     context,
@@ -184,53 +185,79 @@ class _FeedState extends State<Feed> {
                             )),
                   );
                 },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    ListTile(
-                      title: Padding(
-                        child: Text(post["title"]),
-                        padding: EdgeInsets.all(10.0),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Padding(
-                            child: Text(post["description"]),
-                            padding: EdgeInsets.all(10.0),
-                          ),
-                          Transform(
-                            transform: new Matrix4.identity()..scale(0.9),
-                            child: Chip(
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Icon(
-                                    categoryIcon,
-                                    color: categoryColor,
-                                  ),
-                                  Text(
-                                    "  " + post["category"],
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(5.0),
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: Column(
-                        children: <Widget>[
-                          buildLikeIcon(),
-                          Text(post["score"].toString())
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
+                  children: <Widget>[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          child: Text(post["title"]),
+                          padding: EdgeInsets.all(10.0),
+                        ),
+                        Padding(
+                          child: Text(post["description"]),
+                          padding: EdgeInsets.all(10.0),
+                        ),
+                      ],
+                    ),
+                    Column(
+
+                      children: <Widget>[
+                        buildLikeIcon(),
+                        Text(post["score"].toString()),
+                      ],
+                    )
+                  ],
+                )
+                /*child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ListTile(
+                    title: Padding(
+                      child: Text(post["title"]),
+                      padding: EdgeInsets.all(10.0),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          child: Text(post["description"]),
+                          padding: EdgeInsets.all(10.0),
+                        ),
+                        Transform(
+                          transform: new Matrix4.identity()..scale(0.9),
+                          child: Chip(
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Icon(
+                                  categoryIcon,
+                                  color: categoryColor,
+                                ),
+                                Text(
+                                  "  " + post["category"],
+                                ),
+                              ],
+                            ),
+                            padding: EdgeInsets.all(5.0),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Column(
+
+                      children: <Widget>[
+                        buildLikeIcon(),
+                        Text(post["score"].toString())
+                      ],
+                    ),
+                  ),
+                ],
+              ),*/
+                ),
+          );
         });
   }
 }
